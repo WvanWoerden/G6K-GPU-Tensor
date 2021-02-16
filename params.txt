@@ -1,0 +1,33 @@
+rebuild.sh options:
+-y
+    Disable precomputed and stored YR, Popcount, dual_hash (save significantly on memory and CPU cost)
+    Always use
+-m D
+    Sets max sieving dim to D. D % 8 == 0
+    default: 128
+--gpuvecnum V
+	Sets max bucketsize and returned results to V. V % 1024 == 0
+	default: 65536
+
+Always:
+./rebuild -f -y
+gpus (max gpus available)
+threads (max threads available, no hyperthreading)
+dh_bucket_ratio 0.5 (default)
+
+Low dimensions (everything default, except)
+dh_vecs 64
+dh_dim 20
+dh_min n-35
+dh_d4f 30
+
+High dimensions:
+./rebuild -f -y -m ...
+VECNUM >=sqrt( max_db_size * 4 ), multiples of 1024
+max_nr_buckets >=sqrt( max_db_size * 4 )
+trace False
+dh_min n-40
+dh_d4f 32
+dh_dim 20
+dh_vecs 48
+
