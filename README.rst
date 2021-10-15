@@ -67,3 +67,7 @@ The BDGL-like GPU sieve can be enabled by running
 
     ./svp_challenge.py 100 --threads 4 --gpus 1 --gpu_bucketer bdgl --verbose
 
+Acknowledgements
+================
+
+This project was supported through the European Union PROMETHEUS project (Horizon 2020 Research and Innovation Program, grant 780701), ERC-StGARTICULATE project (no. 947821), and the RCADG-ALGSTRONGCRYPTO project (no. 740972).
