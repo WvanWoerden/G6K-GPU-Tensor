@@ -14,14 +14,14 @@ import numpy  # noqa
 subprocess.check_call("make -C kernel",shell=True)
 
 # read actual values of all build variables from kernel/Makefile
-makefile_defs = subprocess.check_output("make -C kernel printvariables | grep '='", shell=True).splitlines()
+makefile_defs = subprocess.getoutput("make -C kernel printvariables | grep '='").splitlines()
 
 def read_from_makefile(field):
     global makefile_defs
     data = [line for line in makefile_defs if line.startswith(field)][0]
-    data = "=" .join(data.split("=")[1:])
+    data = '=' .join(data.split('=')[1:])
     data = data.strip()
-    data = [arg for arg in data.split(" ") if arg.strip()]
+    data = [arg for arg in data.split(' ') if arg.strip()]
     return data
 
 extra_compile_args = read_from_makefile("CXXFLAGS")
