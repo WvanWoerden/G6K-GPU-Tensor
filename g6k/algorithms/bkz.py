@@ -3,8 +3,8 @@
 BKZ Tours.
 """
 import sys
-from pump import pump
-from workout import workout
+from .pump import pump
+from .workout import workout
 
 
 def dim4free_wrapper(dim4free_fun, blocksize):
@@ -111,7 +111,7 @@ def pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=1,
 
     for (kappa, beta, f) in indices:
         if verbose:
-            print "\r k:%d, b:%d, f:%d " % (kappa, beta, f),
+            print( "\r k:%d, b:%d, f:%d " % (kappa, beta, f), end='')
             sys.stdout.flush()
 
         pump(g6k, tracer, kappa, beta, f, **pump_params)
@@ -120,10 +120,10 @@ def pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=1,
             return
 
     if verbose:
-        print "\r k:%d, b:%d, f:%d " % (d-(blocksize-dim4free), blocksize-dim4free, 0),
+        print( "\r k:%d, b:%d, f:%d " % (d-(blocksize-dim4free), blocksize-dim4free, 0), end='')
         sys.stdout.flush()
 
     pump_params["down_stop"] = blocksize - dim4free
     pump(g6k, tracer, d-(blocksize-dim4free), blocksize-dim4free, 0, **pump_params)
     if verbose:
-        print
+        print('')
