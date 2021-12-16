@@ -227,7 +227,7 @@ cdef class SieverParams(object):
         elif key == "bdgl_bucket_size":
             self._core.bdgl_bucket_size = value
         elif key == "gpu_bucketer":
-            self._core.gpu_bucketer = bytes(str(value), 'utf-8')
+            self._core.gpu_bucketer = value.encode("utf-8") if isinstance(value, str) else value
         elif key == "gpu_triple":
             self._core.gpu_triple = value
         else:
@@ -263,7 +263,7 @@ cdef class SieverParams(object):
         elif key == "bgj1_transaction_bulk_size":
             return self._core.bgj1_transaction_bulk_size
         elif key == "simhash_codes_basedir":
-            return str(self._core.simhash_codes_basedir)
+            return self._core.simhash_codes_basedir
         elif key == "gpus":
             return self._core.gpus
         elif key == "streams_per_thread":
@@ -283,7 +283,7 @@ cdef class SieverParams(object):
         elif key == "bdgl_bucket_size":
             return self._core.bdgl_bucket_size
         elif key == "gpu_bucketer":
-            return str(self._core.gpu_bucketer)
+            return self._core.gpu_bucketer
         elif key == "gpu_triple":
             return self._core.gpu_triple
         else:
