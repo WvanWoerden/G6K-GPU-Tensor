@@ -40,7 +40,7 @@ def load_matrix_file(filepath, randomize=False, seed=None, doLLL=True, high_prec
         FPLLL.set_random_seed(seed)
 
     if randomize:
-        bkz.randomize_block(0, A.nrows, density=A.ncols/4)
+        bkz.randomize_block(0, A.nrows, density=A.ncols//4)
         LLL.reduction(A)
         bkz = BKZReduction(A)
 
