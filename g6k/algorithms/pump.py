@@ -10,9 +10,9 @@ import logging
 def print_pump_state(pump):
     pump.minl = min(pump.g6k.l, pump.minl)
     if pump.phase != "down":
-        print "\r %3d: ↑%3d      " % (pump.r-pump.l, pump.g6k.r-pump.g6k.l),
+        print("\r %3d: ↑%3d      ".format(pump.r-pump.l, pump.g6k.r-pump.g6k.l))
     else:
-        print "\r %3d: ↑%3d ↓%3d " % (pump.r-pump.l, pump.r-pump.minl, pump.r-pump.g6k.l),
+        print("\r %3d: ↑%3d ↓%3d ".format(pump.r-pump.l, pump.r-pump.minl, pump.r-pump.g6k.l))
     sys.stdout.flush()
 
 
@@ -155,7 +155,7 @@ def pump(g6k, tracer, kappa, blocksize, dim4free, down_sieve=False, down_sat=Non
             #print g6k.db_lift_probability()
 
             if goal_r0 is not None and (g6k.M.get_r(kappa, kappa) <= goal_r0):
-                print 'Solution:', str(g6k.M.B[kappa])
+                print('Solution:', str(g6k.M.B[kappa]))
                 return flast
 
             # Pump Down
@@ -171,7 +171,7 @@ def pump(g6k, tracer, kappa, blocksize, dim4free, down_sieve=False, down_sat=Non
                             g6k.shrink_left(1)
 
                         if goal_r0 is not None and (g6k.M.get_r(kappa, kappa) <= goal_r0):
-                            print 'Solution:', str(g6k.M.B[kappa])
+                            print('Solution:', str(g6k.M.B[kappa]))
                             return flast
 
                         # Sieve (or Shrink db)
@@ -183,5 +183,5 @@ def pump(g6k, tracer, kappa, blocksize, dim4free, down_sieve=False, down_sat=Non
                             break
 
     if goal_r0 is not None and (g6k.M.get_r(kappa, kappa) <= goal_r0):
-        print 'Solution:', str(g6k.M.B[kappa])
+        print('Solution:', str(g6k.M.B[kappa]))
     return flast

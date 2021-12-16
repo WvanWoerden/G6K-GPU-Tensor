@@ -109,11 +109,11 @@ def load_prebkz(n, s=0, blocksize=40):
     if os.path.isfile(filename) is False:
         set_random_seed(s)
         A = IntegerMatrix.random(n, "qary", q=2**30, k=n//2)
-        print "Did not find '{filename}'. Creating and reducing".format(filename=filename)
-        print "created, ",
+        print("Did not find '{filename}'. Creating and reducing".format(filename=filename))
+        print("created, ",)
         sys.stdout.flush()
         A = LLL.reduction(A)
-        print "LLLed, ",
+        print("LLLed, ",)
         sys.stdout.flush()
 
         if A.nrows >= 160:
@@ -128,7 +128,7 @@ def load_prebkz(n, s=0, blocksize=40):
         bkz = BKZReduction(M)
 
         for b in range(10, blocksize+1):
-            print "\r created, LLLed, BKZed %d"%b,
+            print("\r created, LLLed, BKZed %d"%b,)
             sys.stdout.flush()
 
             par = fplll_bkz.Param(b, strategies=fplll_bkz.DEFAULT_STRATEGY,
@@ -150,8 +150,7 @@ SVPCHALLENGE_NORM_FMT = "svpchallenge/svpchallenge-dim-%03d-seed-%02d.svp"
 def load_svpchallenge_norm(n, s=0):
     filename = SVPCHALLENGE_NORM_FMT%(n, s)
     if os.path.isfile(filename) is False:
-        print "Did not find '{filename}'. Please run svp_exact_find_norm for this instance first".format(
-            filename=filename)
+        print("Did not find '{filename}'. Please run svp_exact_find_norm for this instance first".format(filename=filename))
     with open(filename, 'r') as file:
         norm = float(file.read())
     return norm
@@ -161,7 +160,8 @@ def save_svpchallenge_norm(n, norm, s=0):
     filename = SVPCHALLENGE_NORM_FMT%(n, s)
 
     with open(filename, 'w') as fh:
-        print >>fh, norm
+        fh.write(str(norm))
+#       print >>fh, norm  # old python2
     return
 
 
