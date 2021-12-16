@@ -63,7 +63,7 @@ def asvp_kernel(arg0, params=None, seed=None):
 
     stat.data["quality"] = quality
 
-    print >> sys.stderr, g6k.M.B
+    print( g6k.M.B, file=sys.stderr )
 
     return tracer.trace
 

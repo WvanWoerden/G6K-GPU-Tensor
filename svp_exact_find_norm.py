@@ -60,8 +60,8 @@ def svp_kernel(arg0, params=None, seed=None):
         else:
             matches = 0
             goal_r0 = found_r0
-        print "\t", (n, challenge_seed), "Trial %3d, found norm %10d = %.4f*gh, consec matches %d/5" % (
-            trials, goal_r0, goal_r0/gh, matches)
+        print("\t", (n, challenge_seed), "Trial %3d, found norm %10d = %.4f*gh, consec matches %d/5" % (
+            trials, goal_r0, goal_r0/gh, matches))
 
     save_svpchallenge_norm(n, goal_r0, s=challenge_seed)
 
