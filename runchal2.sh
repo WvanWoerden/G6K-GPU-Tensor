@@ -62,9 +62,9 @@ for ((; dim<=180; dim+=2)); do
 
 	echo "Running: svp_challenge.py $opts" | tee ${fileprefix}.cout${run}.log
 	cat .last_build >> ${fileprefix}.cout${run}.log
-	python ./svp_challenge.py ${opts} --workout/save_prefix ${fileprefix}.mat${run} 2> ${fileprefix}.cerr${run}.log | tee -a ${fileprefix}.cout${run}.log
+	python3 ./svp_challenge.py ${opts} --workout/save_prefix ${fileprefix}.mat${run} 2> ${fileprefix}.cerr${run}.log | tee -a ${fileprefix}.cout${run}.log
 	echo "Finished"
 
-	sleep 10
 	exit
+	sleep 10
 done

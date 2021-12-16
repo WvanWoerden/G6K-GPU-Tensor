@@ -194,9 +194,9 @@ fi
 [ -d parallel-hashmap ] || git clone https://github.com/cr-marcstevens/parallel-hashmap
 
 rm -r build *.so g6k/*.so cuda/*.so kernel/*.so `find g6k -name "*.pyc"`
-python setup.py clean
+python3 setup.py clean
 make -C kernel clean || exit 1
 
 make -C kernel -j ${jobs} || exit 1
 
-python setup.py build_ext --inplace -j ${jobs} || python setup.py build_ext --inplace
+python3 setup.py build_ext --inplace -j ${jobs} || python setup.py build_ext --inplace
