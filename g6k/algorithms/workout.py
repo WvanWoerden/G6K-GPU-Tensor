@@ -3,7 +3,7 @@
 
 """
 import sys
-from pump import pump
+from .pump import pump
 from fpylll.util import gaussian_heuristic
 import time
 
