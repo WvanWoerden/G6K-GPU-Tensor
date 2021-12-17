@@ -262,7 +262,13 @@ def primal_lattice_basis(A, c, q, m=None):
         B[-1, i] = c[i]
     B[-1, -1] = 1
 
-    B = LLL.reduction(B)
+    if m + n + 1 <= 170:
+        B = LLL.reduction(B)
+    else:
+        M = GSO.Mat(B, float_type="ld")
+        lll = LLL.Reduction(M)
+        lll()
+
     assert(B[:n] == IntegerMatrix(n, m+1))
     B = B[n:]
 
