@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PYTHON=python2 # lducas/g6k/gpu_no_yr requires python2
+PYTHON=python3 # lducas/g6k/gpu_no_yr requires python2
 
 jobs="-j 4 "
 if [ "$1" = "-j" ]; then

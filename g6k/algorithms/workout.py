@@ -3,7 +3,7 @@
 
 """
 import sys
-from pump import pump
+from .pump import pump
 from fpylll.util import gaussian_heuristic
 import time
 
@@ -34,7 +34,7 @@ def workout(g6k, tracer, kappa, blocksize, dim4free_min=0,              # Main p
         pump_params = {}
 
     f_start = max(blocksize - start_n, 0, dim4free_min)
-    fs = range(dim4free_min, f_start+1, dim4free_dec)[::-1]
+    fs = list(range(dim4free_min, f_start+1, dim4free_dec)[::-1])
 
     if goal_r0:
         fs += 9999*[dim4free_min]

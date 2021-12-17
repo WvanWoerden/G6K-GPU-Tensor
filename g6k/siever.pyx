@@ -1729,18 +1729,19 @@ cdef class Siever(object):
             >>> _ = sieve.insert_best_lift()
 
         """
-        assert(self.initialized)
-
         L = self.best_lifts()
         if len(L) == 0:
             return None
 
         score_list = [(scoring(index, nlen, self.M.get_r(index, index), aux), -index, v) for (index, nlen, v) in L]
-        score_list = [(a, b, c) for (a,b,c) in score_list if a] + [(None, None, None)]
+        score_list = [(a, b, c) for (a,b,c) in score_list if a]
 
         # print [("%.3f"%a, b) for (a,b,c) in score_list]
         # print
-        (best_score, best_i, best_v) = max(score_list)
+        if not score_list:
+            (best_score, best_i, best_v) = (None, None, None)
+        else:
+            (best_score, best_i, best_v) = max(score_list)
 
         if best_score is None or not best_score:
             return None
