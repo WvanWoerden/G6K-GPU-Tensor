@@ -208,9 +208,9 @@ def primal_lattice_basis(A, c, q, m=None):
 
     B = IntegerMatrix(m+n+1, m+1)
     for i in range(m):
+        B[i, i] = q
         for j in range(n):
-            B[j, i] = A[i, j]
-        B[i+n, i] = q
+            B[j + m, i] = A[i, j]
         B[-1, i] = c[i]
     B[-1, -1] = 1
 
