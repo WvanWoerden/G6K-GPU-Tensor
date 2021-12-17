@@ -191,7 +191,10 @@ def lwe_kernel(arg0, params=None, seed=None):
 
             # overdoing n_max would allocate too much memory, so we are careful
             svp_Tmax = svp_bkz_time_factor * T_BKZ
-            n_max = int(58 + 2.85 * log(svp_Tmax * params.threads)/log(2.))
+            expo = 0.292
+            # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
+            # cannot figure out the additive 58, will leave for now
+            n_max = int(58 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
 
             rr = [g6k.M.get_r(i, i) for i in range(d)]
             for n_expected in range(2, d-2):
