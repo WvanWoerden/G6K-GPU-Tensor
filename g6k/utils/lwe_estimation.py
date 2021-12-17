@@ -42,30 +42,90 @@ def delta_0f(k):
         return (k/(2*pi*e) * (pi*k)**(1./k))**(1/(2*(k-1.)))
 
 
-def log_gh_svp(d, delta_bkz, svp_dim, n, q):
+def log_gh_svp_q(d, delta, eta, n, q):
+    """
+    First calculates where the expected lengths (via root Hermite factor) of
+    Gram--Schmidt norms are longer than q, after this point uses delta^-2 as
+    the decrease factor in their length.
+
+    Uses the volumes implied by these estimated Gram--Schmidt lengths to give
+    the Gaussian heuristic in context [d - eta: d], for eta the dimension of
+    some SVP call.
+
+    :param d: the dimension of the embedding lattice = m + 1
+    :param delta: the root Hermite factor of the reduction used
+    :param eta: the dimension of the block [d - eta: d] for the final SVP call
+    :param n: the dimension of the LWE secret
+    :param q: the modulus of the LWE problem
+    """
+
+    def log_rhf_estimate(delta, dim, log_vol):
+        """
+        Returns the log of the estimated length of the first basis vector
+        calculated using the root Hermite factor
+
+        :param delta: the root Hermite factor of the reduction used
+        :param dim: the dimension of the lattice being reduced
+        :param log_vol: the log of the volume of the lattice being reduced
+        """
+        return (dim - 1) * log(delta) + (1./dim) * log_vol
+
+    for i in range(d):
+        dim = d - i
+        # can explicitly calculate volume when presuming q vectors prior
+        log_vol = (d - n - 1 - i) *  log(q)
+        log_est = log_rhf_estimate(delta, dim, log_vol)
+        if log_est < log(q):
+            # index and height for which we no longer find q vectors
+            slope_begin = i
+            log_slope_height = log_est
+            break
+
+    print(slope_begin)
+
+    # q_index represents the indices up to which we expect q vectors
+    # b_0, ..., b_q_index
+    q_index = slope_begin - 1 if slope_begin > 0 else None
+
+    if q_index is None:
+        # can calculate as standard using rhf estimate for b_0 and GSA
+        return log_gh_svp(d, delta, eta, n, q)
+    else:
+        if eta <= d - slope_begin:
+            # have q vectors but none feature directly in volume calculation
+            log_vol = eta * log_slope_height + eta * (eta + 2*slope_begin - 2*d + 1) * log(delta)
+        else:
+            # number of q vectors hit is slope_begin - d + eta
+            q_part = (slope_begin - d + eta) * log(q)
+            # cover the entire slope
+            slope_part = (d - slope_begin) * log_slope_height - (d - i) * (d - i - 1) * log(delta)
+            log_vol = q_part + slope_part
+
+    normalised_log_vol = (1./eta) * log_vol
+    ball_part = ((1./eta)*lgamma((eta/2.)+1))-(.5*log(pi))
+
+    return ball_part + normalised_log_vol
+
+
+def log_gh_svp(d, delta, eta, n, q):
     """
     Calculates the log of the Gaussian heuristic of the context in which
-    SVP will be ran to try and discover the projected embedded error.
+    SVP will try and discover the projected embedded error, when no q vectors
+    are assumed to be present.
 
     The volume component of the Gaussian heuristic (in particular the lengths
     of the appropriate Gram--Schmidt vectors) is estimated using the GSA
-    [Schnorr03] with the multiplicative factor = delta_bkz ** -2.
+    [Schnorr03] with the multiplicative factor = delta^-2.
 
-    NB, here we use the exact volume of an n dimensional sphere to calculate
-    the ``ball_part`` rather than the usual approximation in the Gaussian
-    heuristic.
-
-    :param d: the dimension of the embedding lattice = n + m + 1
-    :param delta_bkz: the root Hermite factor given by the BKZ reduction
-    :param svp_dim: the dimension of the SVP call in context [d-svp_dim:d]
+    :param d: the dimension of the embedding lattice = m + 1
+    :param delta: the root Hermite factor given by the BKZ reduction
+    :param eta: the dimension of the SVP call in context [d-eta:d]
     :param n: the dimension of the LWE secret
     :param q: the modulus of the LWE instance
 
     """
-    d = float(d)
-    svp_dim = float(svp_dim)
-    ball_part = ((1./svp_dim)*lgamma((svp_dim/2.)+1))-(.5*log(pi))
-    vol_part = ((1./d)*(d-n-1)*log(q))+((svp_dim-d)*log(delta_bkz))
+    ball_part = ((1./eta)*lgamma((eta/2.)+1))-(.5*log(pi))
+    vol_part = ((1./d)*(d-n-1)*log(q))+((eta-d)*log(delta))
     return ball_part + vol_part
 
 
