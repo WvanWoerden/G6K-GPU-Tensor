@@ -81,8 +81,6 @@ def log_gh_svp_q(d, delta, eta, n, q):
             log_slope_height = log_est
             break
 
-    print(slope_begin)
-
     # q_index represents the indices up to which we expect q vectors
     # b_0, ..., b_q_index
     q_index = slope_begin - 1 if slope_begin > 0 else None
@@ -129,7 +127,7 @@ def log_gh_svp(d, delta, eta, n, q):
     return ball_part + vol_part
 
 
-def gsa_params(n, alpha, q=None, samples=None, d=None, decouple=False):
+def gsa_params(n, alpha, q=None, decouple=True):
     """
     Finds winning parameters (a BKZ reduction dimension and a final SVP call
     dimension) for a given Darmstadt LWE instance (n, alpha).
@@ -138,77 +136,67 @@ def gsa_params(n, alpha, q=None, samples=None, d=None, decouple=False):
     :param alpha: the noise rate of the LWE instance
     :param q: the modulus of the LWE instance. ``None`` means determine by
         reloading the challenge
-    :param samples: maximum number of LWE samples to use for the embedding
-        lattice. ``None`` means ``5*n``
-    :param d: find best parameters for a dimension ``d`` embedding lattice
-    :param decouple: if True the BKZ dimension and SVP dimension may differ
+    :param decouple: if ``True`` the BKZ dimension and SVP dimension may differ
 
     """
-    if q is None or samples is None:
-        A, _, q = load_lwe_challenge(n, alpha)
-        samples = A.nrows
+    if q is None:
+        _, _, q = load_lwe_challenge(n, alpha)
 
     stddev = alpha*q
 
-    params = decoupler(decouple, n, samples, q, stddev, d)
+    params = decoupler(n, stddev, q, decouple)
     min_cost_param = find_min_complexity(params)
     if min_cost_param is not None:
         return min_cost_param
+    else:
+        print("No satisfying parameters found.")
 
 
-def decoupler(decouple, n, samples, q, stddev, d):
+def decoupler(n, stddev, q, decouple):
     """
-    Creates valid (bkz_dim, svp_dim, d) triples, as determined by
-    ``primal_parameters`` and determines which succeed in the recovery of the
-    embedded error.
+    Creates (bkz_dim, svp_dim, d) triples and determines which succeed in the
+    recovery of the embedded error.
 
-    :param decouple: if True the BKZ dimension and SVP dimension may differ
     :param n: the dimension of the LWE secret
-    :param samples: maximum number of LWE samples to use for the embedding
-        lattice. ``None`` means ``5*n``
     :param q: the modulus of the LWE instance
     :param stddev: the standard deviation of the distribution from which the
         error vector components were uniformly and indepedently drawn
-    :param d: find best parameters for dimension ``d`` embedding lattice
+    :param decouple: if ``True`` the BKZ dimension and SVP dimension may differ
 
     """
     params = []
 
-    if d is not None:
-        ms = [d - 1]
-    else:
-        ms = range(n, min(5*n+1, samples+1))
+    ms = range(4*n+1)
 
     for m in ms:
-        beta_bound = min(m+1, 110+default_dim4free_fun(110))
-        svp_bound = min(m+1, 156)
+        beta_bound = min(m+1, 120+default_dim4free_fun(120))
+        svp_bound = min(m+1, 171)
         for bkz_block_size in range(40, beta_bound):
-            delta_0 = delta_0f(bkz_block_size)
+            delta = delta_0f(bkz_block_size)
             if decouple:
                 svp_dims = range(40, svp_bound)
             else:
                 svp_dims = [min(bkz_block_size, svp_bound)]
 
             for svp_dim in svp_dims:
-                d = float(m + 1)
-                rhs = log_gh_svp(d, delta_0, svp_dim, n, q)
+                d = m + 1
+                rhs = log_gh_svp_q(d, delta, svp_dim, n, q)
                 if rhs - log(stddev) - log(svp_dim)/2. >= 0:
                     params.append([bkz_block_size, svp_dim, m+1])
 
     return params
 
 
-def find_min_complexity(params):
+def find_min_complexity(params, expo=0.292):
     """
     For each valid and solving triple (bkz_dim, svp_dim, d) determines an
-    approximate (!) cost and minimises.
+    approximate cost and minimises.
 
     :param params: a list of all solving (bkz_dim, svp_dim, d) triples
 
     """
     min_cost = None
     min_cost_param = None
-    expo = .349
 
     for param in params:
 
