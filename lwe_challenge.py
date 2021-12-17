@@ -127,9 +127,9 @@ def lwe_kernel(arg0, params=None, seed=None):
     target_norm = goal_margin * (alpha*q)**2 * m + 1
 
     if blocksizes is not None:
-        blocksizes = range(10, 40) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
+        blocksizes = list(range(10, 40)) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
     else:
-        blocksizes = range(10, 50) + [b-20, b-17] + range(b - 14, b + 25, 2)
+        blocksizes = list(range(10, 50)) + [b-20, b-17] + list(range(b - 14, b + 25, 2))
 
     B = primal_lattice_basis(A, c, q, m=m)
 
