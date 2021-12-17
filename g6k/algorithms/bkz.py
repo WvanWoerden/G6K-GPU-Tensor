@@ -5,7 +5,7 @@ BKZ Tours.
 import sys
 from .pump import pump
 from .workout import workout
-
+import six
 
 def dim4free_wrapper(dim4free_fun, blocksize):
     """
@@ -97,7 +97,7 @@ def pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=1,
     g6k.lll(0,d)
     g6k.update_gso(0,d)
 
-    if isinstance(dim4free_fun, basestring):
+    if isinstance(dim4free_fun, six.string_types):
         dim4free_fun = eval(dim4free_fun)
 
     dim4free = dim4free_wrapper(dim4free_fun, blocksize) + extra_dim4free

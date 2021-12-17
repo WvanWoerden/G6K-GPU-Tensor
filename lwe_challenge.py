@@ -15,7 +15,7 @@ from math import log
 from fpylll import BKZ as fplll_bkz
 from fpylll.algorithms.bkz2 import BKZReduction
 from fpylll.tools.quality import basis_quality
-from fpylll.util import gaussian_heuristic
+from fpylll.util import gaussian_heuristic, set_threads
 
 from g6k.algorithms.bkz import pump_n_jump_bkz_tour
 from g6k.algorithms.pump import pump
@@ -102,6 +102,10 @@ def lwe_kernel(arg0, params=None, seed=None):
     # misc
     dont_trace = params.pop("dummy_tracer")
     verbose = params.pop("verbose")
+
+    threads = params.get("threads", None)
+    if threads is not None:
+        set_threads(threads)
 
     A, c, q = load_lwe_challenge(n=n, alpha=alpha)
     print( "-------------------------" )
