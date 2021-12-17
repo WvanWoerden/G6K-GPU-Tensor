@@ -114,13 +114,13 @@ def lwe_kernel(arg0, params=None, seed=None):
     if m is None:
         try:
             min_cost_param = gsa_params(n=A.ncols, alpha=alpha, q=q,
-                                        samples=A.nrows, decouple=decouple)
+                                        decouple=decouple)
             (b, s, m) = min_cost_param
         except TypeError:
             raise TypeError("No winning parameters.")
     else:
         try:
-            min_cost_param = gsa_params(n=A.ncols, alpha=alpha, q=q, samples=m,
+            min_cost_param = gsa_params(n=A.ncols, alpha=alpha, q=q,
                                         decouple=decouple)
             (b, s, _) = min_cost_param
         except TypeError:
@@ -133,7 +133,7 @@ def lwe_kernel(arg0, params=None, seed=None):
     if blocksizes is not None:
         blocksizes = list(range(10, 40)) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
     else:
-        blocksizes = list(range(10, 50)) + [b-20, b-17] + list(range(b - 14, b + 25, 2))
+        blocksizes = list(range(10, 50)) + list(range(60, b-15, 5)) + [b-15] + list(range(b - 13, b + 25, 2))
 
     B = primal_lattice_basis(A, c, q, m=m)
 
