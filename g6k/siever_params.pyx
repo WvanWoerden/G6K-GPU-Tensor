@@ -207,7 +207,7 @@ cdef class SieverParams(object):
         elif key == "bgj1_transaction_bulk_size":
             self._core.bgj1_transaction_bulk_size = value
         elif key == "simhash_codes_basedir":
-            self._core.simhash_codes_basedir = bytes(str(value), 'utf-8')
+            self._core.simhash_codes_basedir = value.encode("utf-8") if isinstance(value, str) else value
         elif key == "gpus":
             self._core.gpus = value
         elif key == "streams_per_thread":
