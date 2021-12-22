@@ -135,7 +135,7 @@ def load_prebkz(n, s=0, blocksize=40):
                                   max_loops=1, flags=fplll_bkz.MAX_LOOPS)
             bkz(par)
 
-        print
+        print()
 
         fn = open(filename, "w")
         fn.write(str(A))
@@ -272,7 +272,7 @@ def load_lwe_challenge(n=40, alpha=0.005):
         fn.close()
 
     data = open(filename, "r").readlines()
-    n, m, q = map(lambda x: int(x), [data[0], data[1], data[2]])
+    n, m, q = [int(x) for x in [data[0], data[1], data[2]]]
 
     c_index = 3 if data[3].startswith("[") else 4
 
