@@ -87,7 +87,6 @@ inline CompressedVector SimHashes::compress(std::array<LFT,YR_DIM> const &v) con
 }
 
 void DualHashes::disable() {
-    initialized = true;
     nr_vecs = 0;
     k = 0;
     acceptance_radius = 0;
@@ -97,7 +96,6 @@ void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::ve
     conv_ratio = _conv_ratio;
     target_index = _target_index;
 
-    initialized = true;
     nr_vecs = new_dual_vecs.size();
     assert( nr_vecs > 0 );
     assert( nr_vecs % 4 == 0 );
@@ -106,7 +104,7 @@ void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::ve
         std::cerr << "Something went wrong.. " << siever.l << " " << siever.ll << std::endl;
     }
     
-    
+    //std::cout << "reset: " << nr_vecs << " " << k << " " << target_index << " " << siever.l << " " << siever.r << std::endl;
 
     // swap order because OTF_LIFT_HELPER_DIM 0,.., k-1 corresponds to l-1, ..., l-k in the context
     dual_vecs.resize(nr_vecs);
@@ -127,10 +125,13 @@ void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::ve
     }
 
 inline void DualHashes::update_dh_bound( Siever const &siever, float lenbound ) {
-    float bound = siever.get_lift_bound( target_index ) - lenbound * siever.gh;
-    float dual_bound = conv_ratio * bound;
-    dual_bound = std::max(dual_bound, float(0.));
-    acceptance_radius = size_t(256*256*dual_bound);
+    acceptance_radius = 0;
+    if(nr_vecs > 0 ) {
+        float bound = siever.get_lift_bound( target_index ) - lenbound * siever.gh;
+        float dual_bound = conv_ratio * bound;
+        dual_bound = std::max(dual_bound, float(0.));
+        acceptance_radius = size_t(256*256*dual_bound);
+    }
 }
 
 // squared radius

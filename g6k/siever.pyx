@@ -106,7 +106,6 @@ cdef class Siever(object):
         self._core.full_n = M.d
         self.lll(0, M.d)
         self.initialized = False
-        self.dual_hash_l = -1
 
     @property
     def params(self):
@@ -1166,8 +1165,7 @@ cdef class Siever(object):
         # TODO: sample dummy vecs as they will be overwritten
         self.resize_db(N, 0)
 
-        if( self.dual_hash_l != self.l ):
-            self.reset_dual_vecs(256)
+        self.reset_dual_vecs(256)
 
         sig_on()
         self._core.gpu_sieve()
@@ -1288,22 +1286,21 @@ cdef class Siever(object):
         dual_hash_d4f = self.params.dh_dim4free
 
         dual_hash_d4f = min( dual_hash_d4f, self.l - self.ll )
-        k = min( dual_hash_dim, self.l - self.ll)  
+        k = min( dual_hash_dim, dual_hash_d4f)  
         
         cdef np.ndarray dual_vecs = zeros((dual_hash_vecs, k), dtype='float32') 
 
-        if self.n < self.params.dh_min or dual_hash_vecs <= 0 or k <= 0:
+        if self.n < self.params.dh_min or dual_hash_vecs <= 0 or k < dual_hash_dim:
             sig_on()
             self._core.reset_dual_vecs( <float*>dual_vecs.data, 0, 0, 0., 0 )
             sig_off()
 
-            self.dual_hash_l = self.l
             return 
 
         
-        if k > 0:
+        if k >= dual_hash_dim:
             hash_start = self.l-k
-             
+
             mu = zeros((k, k), dtype='float64')
             for i in xrange(hash_start,self.l):
                 for j in xrange(hash_start,i+1):
@@ -1365,16 +1362,13 @@ cdef class Siever(object):
         for i in xrange(dual_hash_vecs):
             for j in xrange(k):
                 dual_vecs[i,j] = dual_vecs[i,j] * self.M.r()[hash_start+j]**0.5
-
+        
         sig_on()
         self._core.reset_dual_vecs( <float*>dual_vecs.data, dual_hash_vecs, k, conv_ratio, self.l - dual_hash_d4f )
         sig_off()
 
-        self.dual_hash_l = self.l
-
     def statistics_lift_hash( self, unsigned int N ):
         assert(self.initialized)
-        assert(self.dual_hash_l == self.l)
         assert(N <= self.db_size())
         if N == 0:
             N = self.db_size()

@@ -257,6 +257,9 @@ void Siever::initialize_local(unsigned int ll_, unsigned int l_, unsigned int r_
     double time_invalidate_sorting = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count();  
     start_time = std::chrono::steady_clock::now();
 
+    // invalidate dual hash
+    dual_hashes.disable();
+
     // init gpus
     if( params.gpus > 0 ) {
         gpu_general_smartInit(); 

@@ -24,7 +24,10 @@ def wrapped_sieve(pump):
     else:
         alg = None
 
-    dh_dim4free = min(pump.g6k.params.dh_dim4free, pump.g6k.l - pump.insert_left_bound)
+    # only dh_hash in top 3 pumps
+    dh_dim4free = 0
+    if pump.g6k.l - pump.l <= 3:
+        dh_dim4free = min(pump.g6k.params.dh_dim4free, pump.g6k.l - pump.insert_left_bound)
 
     cont = True
     try:
