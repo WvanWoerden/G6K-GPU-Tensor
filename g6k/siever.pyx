@@ -1330,7 +1330,7 @@ cdef class Siever(object):
 
             # greedy improvement
             if dual_hash_vecs_construct > dual_hash_vecs:
-                for t in xrange(3):
+                for t in xrange(1):
                     sub = npp.copy(dual_vecs)
                     for i in xrange(dual_vecs_yr.shape[0]):
                         g = sub.transpose().dot(sub)
@@ -1355,9 +1355,11 @@ cdef class Siever(object):
             sub = npp.copy(dual_vecs)
             gram = sub.transpose().dot(sub)
             
+            #print(self.l-dual_hash_d4f, self.l, self.r, gaussian_heuristic( self.M.r()[self.l-dual_hash_d4f:self.r] ), gaussian_heuristic( self.M.r()[self.l:self.r]))
+
             conv_ratio = 0.
             if( length_bound > 0 ):
-                conv_ratio = npp.trace(gram) / dual_hash_d4f
+                conv_ratio = npp.trace(gram) / k
         
         for i in xrange(dual_hash_vecs):
             for j in xrange(k):
