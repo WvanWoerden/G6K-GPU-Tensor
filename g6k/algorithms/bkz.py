@@ -106,7 +106,8 @@ def pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=1,
     indices  = [(0, blocksize - dim4free + i, i) for i in range(0, dim4free, jump)]
     indices += [(i, blocksize, dim4free) for i in range(0, d - blocksize, jump)]
     indices += [(d - blocksize + i, blocksize - i, dim4free - i) for i in range(0, dim4free, jump)]
-
+#    indices += [(d - blocksize + i, blocksize - i, max(0, dim4free - i)) for i in range(0, blocksize-50, jump)]
+    
     pump_params["down_stop"] = dim4free+3
 
     for (kappa, beta, f) in indices:

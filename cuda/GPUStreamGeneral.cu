@@ -2556,6 +2556,7 @@ void GPUStreamGeneral::B_launch_kernel() {
             CUDA_CHECK( cudaPeekAtLastError() );    
     }
 
+size_t Brecerrcnt = 0;
 void GPUStreamGeneral::B_receive_data(std::vector<triple_bucket> &bucket, const size_t max_vecs_per_bucket, bool onlyprocess) {
 
             // wait for data to arrive
@@ -2568,6 +2569,14 @@ void GPUStreamGeneral::B_receive_data(std::vector<triple_bucket> &bucket, const 
                     indextype db_index = cdb[cdb_start+i].i;
                     for( indextype j = 0; j < multi_bucket; j++ ) {
                         indextype b_index = host_indices[multi_bucket*i+j];
+			if (!(b_index < bucket.size()))
+			{
+				if(++Brecerrcnt < 128)
+					std::cerr << "b_index:" << b_index << ">=" <<
+bucket.size() << std::endl;
+				continue;
+				throw std::runtime_error("bindex");
+			}
                         auto offset = bucket[b_index].size++;
                         if( offset < max_vecs_per_bucket ) {
                             bucket[b_index].indices[offset] = db_index;

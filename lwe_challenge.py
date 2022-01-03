@@ -133,7 +133,8 @@ def lwe_kernel(arg0, params=None, seed=None):
     if blocksizes is not None:
         blocksizes = list(range(10, 40)) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
     else:
-        blocksizes = list(range(10, 50)) + list(range(60, b-15, 5)) + [b-15] + list(range(b - 13, b + 25, 2))
+#        blocksizes = list(range(10, 50)) + list(range(90, b-15, 5)) + [b-15] + list(range(b - 13, b + 25, 2))
+        blocksizes = list(range(10, 50)) + list(range(70, b-15, 10)) + [b-15] + list(range(b - 13, b + 25, 2))
 
     B = primal_lattice_basis(A, c, q, m=m)
 
@@ -194,7 +195,7 @@ def lwe_kernel(arg0, params=None, seed=None):
             expo = 0.292
             # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
             # cannot figure out the additive 58, will leave for now
-            n_max = int(58 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
+            n_max = int(58+6 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
 
             rr = [g6k.M.get_r(i, i) for i in range(d)]
             for n_expected in range(2, d-2):
