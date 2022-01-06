@@ -1157,6 +1157,7 @@ void kernel_bucketing(half* a, half* b, const uint32_t bucketsize, uint32_t* buc
     #pragma unroll
     for( int i = 0; i < 8; i++ ) {
         best_ips[i] = half(0.);
+        best_ind[i] = 0;
     }
 
     for( ; aid < aid_end; aid += astep ) {    
@@ -2568,6 +2569,7 @@ void GPUStreamGeneral::B_receive_data(std::vector<triple_bucket> &bucket, const 
                     indextype db_index = cdb[cdb_start+i].i;
                     for( indextype j = 0; j < multi_bucket; j++ ) {
                         indextype b_index = host_indices[multi_bucket*i+j];
+                        assert(b_index < bucket.size());
                         auto offset = bucket[b_index].size++;
                         if( offset < max_vecs_per_bucket ) {
                             bucket[b_index].indices[offset] = db_index;
