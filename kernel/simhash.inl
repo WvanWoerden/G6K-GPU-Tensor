@@ -92,9 +92,10 @@ void DualHashes::disable() {
     acceptance_radius = 0;
 }
 
-void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::vector<LFT>> new_dual_vecs, float _conv_ratio, unsigned int _target_index) {
+void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::vector<LFT>> new_dual_vecs, float _conv_ratio, unsigned int _target_index, float _max_hbound) {
     conv_ratio = _conv_ratio;
     target_index = _target_index;
+    max_hbound = _max_hbound;
 
     nr_vecs = new_dual_vecs.size();
     assert( nr_vecs > 0 );
@@ -131,9 +132,10 @@ inline void DualHashes::update_dh_bound( Siever const &siever, float lenbound ) 
         float bound = bound_left * k / (siever.l-target_index);
         float dual_bound = conv_ratio * bound;
         dual_bound = std::max(dual_bound, float(0.));
+        dual_bound = std::min(dual_bound, max_hbound);
         acceptance_radius = int(256*256*dual_bound);
         
-        acceptance_radius = std::min(radius_for_ratio(0.000003), acceptance_radius);
+        //acceptance_radius = std::min(radius_for_ratio(0.000003), acceptance_radius);
 
         //std::cout << bound << " " << lenbound << " " << siever.gh << " " << dual_bound << " " << get_acceptance_ratio() << std::endl;
     }

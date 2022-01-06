@@ -1292,7 +1292,7 @@ cdef class Siever(object):
 
         if self.n < self.params.dh_min or dual_hash_vecs <= 0 or k < dual_hash_dim:
             sig_on()
-            self._core.reset_dual_vecs( <float*>dual_vecs.data, 0, 0, 0., 0 )
+            self._core.reset_dual_vecs( <float*>dual_vecs.data, 0, 0, 0., 0, 0. )
             sig_off()
 
             return 
@@ -1357,17 +1357,27 @@ cdef class Siever(object):
             
             #print(self.l-dual_hash_d4f, self.l, self.r, gaussian_heuristic( self.M.r()[self.l-dual_hash_d4f:self.r] ), gaussian_heuristic( self.M.r()[self.l:self.r]))
 
+            tr = npp.trace(gram)
+            dt = npp.det(gram)
             conv_ratio = 0.
             if( length_bound > 0 ):
-                conv_ratio = npp.trace(gram) / k
-        
-        for i in xrange(dual_hash_vecs):
-            for j in xrange(k):
-                dual_vecs[i,j] = dual_vecs[i,j] * self.M.r()[hash_start+j]**0.5
-        
-        sig_on()
-        self._core.reset_dual_vecs( <float*>dual_vecs.data, dual_hash_vecs, k, conv_ratio, self.l - dual_hash_d4f )
-        sig_off()
+                conv_ratio = tr / k
+
+            # compute max_hbound to keep filter acceptance low enough
+            max_acceptance = 1e-6
+            max_hbound_unpreserved = (max_acceptance/npp.pi**(dual_hash_vecs/2.) / gamma(dual_hash_vecs/2.+1))**(2./dual_hash_vecs)
+            max_bdd_preserved = (max_acceptance**2 * dt)**(1./k) * k / tr
+            max_bound = max_bdd_preserved * gaussian_heuristic(self.M.r()[self.l-k:self.l])
+            max_hbound_preserved = max_bound * conv_ratio
+            print("max hbounds:", max_hbound_preserved, max_hbound_unpreserved)
+            max_hbound = min(max_hbound_preserved, max_hbound_unpreserved)
+            
+            for i in xrange(dual_hash_vecs):
+                for j in xrange(k):
+                    dual_vecs[i,j] = dual_vecs[i,j] * self.M.r()[hash_start+j]**0.5
+            sig_on()
+            self._core.reset_dual_vecs( <float*>dual_vecs.data, dual_hash_vecs, k, conv_ratio, self.l - dual_hash_d4f, max_hbound)
+            sig_off()
 
     def statistics_lift_hash( self, unsigned int N ):
         assert(self.initialized)

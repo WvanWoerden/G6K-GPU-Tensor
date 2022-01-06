@@ -232,7 +232,7 @@ cdef extern from "../kernel/siever.h" nogil:
         void load_gso(unsigned int full_n, double* mu)
 
         # Local setup methods:
-        void reset_dual_vecs( float* dual_vecs_ptr, unsigned int dh_vecs, unsigned int dh_dim, float conv_ratio, unsigned int target_index ) 
+        void reset_dual_vecs( float* dual_vecs_ptr, unsigned int dh_vecs, unsigned int dh_dim, float conv_ratio, unsigned int target_index, float max_hbound ) 
         void initialize_local(unsigned int ll_, unsigned int l_, unsigned int r_)
         void extend_left(unsigned int lp)
         void shrink_left(unsigned int lp)

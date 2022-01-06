@@ -301,13 +301,14 @@ class DualHashes
 
     public:
         int acceptance_radius;
+        float max_hbound = 0.;
         bool initialized = false;
 
         explicit DualHashes(){}
         
         inline void disable();
         inline void reset_dual_vecs(Siever const &siever, 
-                const std::vector<std::vector<LFT>> dual_vecs, float conv_ratio, unsigned int target_index);
+                const std::vector<std::vector<LFT>> dual_vecs, float conv_ratio, unsigned int target_index, float max_hbound);
         inline void update_dh_bound( Siever const &siever, float lenbound ); 
         inline int radius_for_ratio( const double x ) const; 
         inline void reset_acceptance_radius( const double x);
