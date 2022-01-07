@@ -78,6 +78,7 @@ cdef class SieverParams(object):
         "dual_mode",
         "dh_dim4free",
         "dh_min",
+        "dh_acceptance"
 ]
 
     def __init__(self, **kwds):
@@ -133,6 +134,8 @@ cdef class SieverParams(object):
             kwds["dh_dim4free"] = 32
         if "dh_min" not in kwds:
             kwds["dh_min"] = 90
+        if "dh_acceptance" not in kwds:
+            kwds["dh_acceptance"] = 1e-5
         if "bdgl_bucket_size" not in kwds:
             kwds["bdgl_bucket_size"] = 16*1024
         if "gpu_bucketer" not in kwds:

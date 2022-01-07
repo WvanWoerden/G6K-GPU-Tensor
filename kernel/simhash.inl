@@ -134,10 +134,6 @@ inline void DualHashes::update_dh_bound( Siever const &siever, float lenbound ) 
         dual_bound = std::max(dual_bound, float(0.));
         dual_bound = std::min(dual_bound, max_hbound);
         acceptance_radius = int(256*256*dual_bound);
-        
-        //acceptance_radius = std::min(radius_for_ratio(0.000003), acceptance_radius);
-
-        //std::cout << bound << " " << lenbound << " " << siever.gh << " " << dual_bound << " " << get_acceptance_ratio() << std::endl;
     }
 }
 
