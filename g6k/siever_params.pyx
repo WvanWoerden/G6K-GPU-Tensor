@@ -78,6 +78,7 @@ cdef class SieverParams(object):
         "dual_mode",
         "dh_dim4free",
         "dh_min",
+        "dh_acceptance"
 ]
 
     def __init__(self, **kwds):
@@ -118,9 +119,9 @@ cdef class SieverParams(object):
         if "streams_per_thread" not in kwds:
             kwds["streams_per_thread"] = 1
         if "dh_dim" not in kwds:
-            kwds["dh_dim"] = 16
+            kwds["dh_dim"] = 20
         if "dh_vecs" not in kwds:
-            kwds["dh_vecs"] = 0
+            kwds["dh_vecs"] = 32
         if "dh_bucket_ratio" not in kwds:
             kwds["dh_bucket_ratio"] = 0.5
         if "multi_bucket" not in kwds:
@@ -133,6 +134,8 @@ cdef class SieverParams(object):
             kwds["dh_dim4free"] = 32
         if "dh_min" not in kwds:
             kwds["dh_min"] = 90
+        if "dh_acceptance" not in kwds:
+            kwds["dh_acceptance"] = 1e-5
         if "bdgl_bucket_size" not in kwds:
             kwds["bdgl_bucket_size"] = 16*1024
         if "gpu_bucketer" not in kwds:
