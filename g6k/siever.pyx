@@ -21,7 +21,7 @@ import numpy as npp
 from numpy.linalg import inv, cond
 cimport numpy as np
 from fpylll import LLL, GSO, IntegerMatrix, Enumeration
-from math import ceil, floor, gamma
+from math import ceil, floor, lgamma, gamma
 
 from decl cimport CompressedEntry, Entry
 from decl cimport show_cpu_stats
@@ -1165,7 +1165,7 @@ cdef class Siever(object):
         # TODO: sample dummy vecs as they will be overwritten
         self.resize_db(N, 0)
 
-        self.reset_dual_vecs(256)
+        self.reset_dual_vecs(128)
 
         sig_on()
         self._core.gpu_sieve()
@@ -1292,7 +1292,7 @@ cdef class Siever(object):
 
         if self.n < self.params.dh_min or dual_hash_vecs <= 0 or k < dual_hash_dim:
             sig_on()
-            self._core.reset_dual_vecs( <float*>dual_vecs.data, 0, 0, 0., 0 )
+            self._core.reset_dual_vecs( <float*>dual_vecs.data, 0, 0, 0., 0, 0. )
             sig_off()
 
             return 
@@ -1330,7 +1330,7 @@ cdef class Siever(object):
 
             # greedy improvement
             if dual_hash_vecs_construct > dual_hash_vecs:
-                for t in xrange(3):
+                for t in xrange(2):
                     sub = npp.copy(dual_vecs)
                     for i in xrange(dual_vecs_yr.shape[0]):
                         g = sub.transpose().dot(sub)
@@ -1355,17 +1355,34 @@ cdef class Siever(object):
             sub = npp.copy(dual_vecs)
             gram = sub.transpose().dot(sub)
             
+            #print(self.l-dual_hash_d4f, self.l, self.r, gaussian_heuristic( self.M.r()[self.l-dual_hash_d4f:self.r] ), gaussian_heuristic( self.M.r()[self.l:self.r]))
+
+            tr = npp.trace(gram)
+            logdt = npp.linalg.slogdet(gram)[1]
+            dt_norm = npp.exp(logdt/k)
             conv_ratio = 0.
             if( length_bound > 0 ):
-                conv_ratio = npp.trace(gram) / dual_hash_d4f
-        
-        for i in xrange(dual_hash_vecs):
-            for j in xrange(k):
-                dual_vecs[i,j] = dual_vecs[i,j] * self.M.r()[hash_start+j]**0.5
-        
-        sig_on()
-        self._core.reset_dual_vecs( <float*>dual_vecs.data, dual_hash_vecs, k, conv_ratio, self.l - dual_hash_d4f )
-        sig_off()
+                conv_ratio = tr / k
+
+            # compute max_hbound to keep filter acceptance low enough
+            max_acceptance = self.params.dh_acceptance;
+            log_max_acceptance = npp.log(max_acceptance)
+            log_max_hbound_unpreserved = 2./dual_hash_vecs * (log_max_acceptance - dual_hash_vecs/2. * npp.log(npp.pi) + lgamma(dual_hash_vecs/2.+1))
+            max_hbound_unpreserved = npp.exp(log_max_hbound_unpreserved)
+            max_bdd_preserved = (max_acceptance)**(2./k) * dt_norm * k / tr
+            max_bound = max_bdd_preserved * gaussian_heuristic(self.M.r()[self.l-k:self.l])
+            max_hbound_preserved = max_bound * conv_ratio
+            max_hbound = min(max_hbound_preserved, max_hbound_unpreserved)
+           
+            # preserved acceptance ratio
+            #p_ar = (max_hbound / max_hbound_preserved)**(k/2.) * max_acceptance
+            #print("max hbounds:", max_hbound_preserved, max_hbound_unpreserved, conv_ratio * length_bound, p_ar)
+            for i in xrange(dual_hash_vecs):
+                for j in xrange(k):
+                    dual_vecs[i,j] = dual_vecs[i,j] * self.M.r()[hash_start+j]**0.5
+            sig_on()
+            self._core.reset_dual_vecs( <float*>dual_vecs.data, dual_hash_vecs, k, conv_ratio, self.l - dual_hash_d4f, max_hbound)
+            sig_off()
 
     def statistics_lift_hash( self, unsigned int N ):
         assert(self.initialized)

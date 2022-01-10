@@ -301,13 +301,14 @@ class DualHashes
 
     public:
         int acceptance_radius;
+        float max_hbound = 0.;
         bool initialized = false;
 
         explicit DualHashes(){}
         
         inline void disable();
         inline void reset_dual_vecs(Siever const &siever, 
-                const std::vector<std::vector<LFT>> dual_vecs, float conv_ratio, unsigned int target_index);
+                const std::vector<std::vector<LFT>> dual_vecs, float conv_ratio, unsigned int target_index, float max_hbound);
         inline void update_dh_bound( Siever const &siever, float lenbound ); 
         inline int radius_for_ratio( const double x ) const; 
         inline void reset_acceptance_radius( const double x);
@@ -546,7 +547,7 @@ public:
     SieverParams get_params(); // implemented in params.cpp
     
     // Transfer dual vecs from python layer to DualHash
-    void reset_dual_vecs( LFT* dual_vecs_ptr, size_t nr_dual_vecs, size_t dim_dual, LFT conv_ratio, unsigned int target_index ) 
+    void reset_dual_vecs( LFT* dual_vecs_ptr, size_t nr_dual_vecs, size_t dim_dual, LFT conv_ratio, unsigned int target_index, float max_hbound ) 
     {
         if( nr_dual_vecs == 0 ) {
             dual_hashes.disable();
@@ -555,7 +556,7 @@ public:
             std::vector<std::vector<LFT>> dual_vecs(nr_dual_vecs, std::vector<LFT>(dim_dual, 0.));
             for( size_t i = 0; i < nr_dual_vecs; ++i )
                 std::copy( dual_vecs_ptr + i * dim_dual, dual_vecs_ptr + (i+1) * dim_dual, dual_vecs[i].begin() );
-            dual_hashes.reset_dual_vecs(*this, dual_vecs, conv_ratio, target_index );
+            dual_hashes.reset_dual_vecs(*this, dual_vecs, conv_ratio, target_index, max_hbound );
        
 
             if( !NOYR ) {

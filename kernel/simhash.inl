@@ -92,9 +92,10 @@ void DualHashes::disable() {
     acceptance_radius = 0;
 }
 
-void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::vector<LFT>> new_dual_vecs, float _conv_ratio, unsigned int _target_index) {
+void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::vector<LFT>> new_dual_vecs, float _conv_ratio, unsigned int _target_index, float _max_hbound) {
     conv_ratio = _conv_ratio;
     target_index = _target_index;
+    max_hbound = _max_hbound;
 
     nr_vecs = new_dual_vecs.size();
     assert( nr_vecs > 0 );
@@ -115,7 +116,7 @@ void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::ve
         }
     }
 
-    ball_volume = std::pow(M_PI, k/2.) / tgamma( k/2. + 1);
+    ball_volume = std::pow(M_PI, nr_vecs/2.) / tgamma( nr_vecs/2. + 1);
 
     tests = 0;
     tests_passed = 0;
@@ -126,17 +127,19 @@ void DualHashes::reset_dual_vecs(Siever const &siever, const std::vector<std::ve
 
 inline void DualHashes::update_dh_bound( Siever const &siever, float lenbound ) {
     acceptance_radius = 0;
-    if(nr_vecs > 0 ) {
-        float bound = siever.get_lift_bound( target_index ) - lenbound * siever.gh;
+    if(nr_vecs > 0 and k > 0) {
+        float bound_left = siever.get_lift_bound( target_index ) - lenbound * siever.gh;
+        float bound = bound_left * k / (siever.l-target_index);
         float dual_bound = conv_ratio * bound;
         dual_bound = std::max(dual_bound, float(0.));
-        acceptance_radius = size_t(256*256*dual_bound);
+        dual_bound = std::min(dual_bound, max_hbound);
+        acceptance_radius = int(256*256*dual_bound);
     }
 }
 
 // squared radius
 inline int DualHashes::radius_for_ratio( const double x ) const {
-   return int(256*256 * nr_vecs / double(k) * std::pow((x/ball_volume), 2. / k)); 
+   return int(256*256 * std::pow((x/ball_volume), 2. / nr_vecs)); 
 }
 
 inline void DualHashes::reset_acceptance_radius( const double x) {
@@ -144,7 +147,7 @@ inline void DualHashes::reset_acceptance_radius( const double x) {
 }
 
 inline double DualHashes::get_acceptance_ratio() {
-    return ball_volume * std::pow(double(acceptance_radius)/(256*256*nr_vecs/double(k)), k/2.);
+    return ball_volume * std::pow(double(acceptance_radius)/(256*256), nr_vecs/2.);
 }
 
 inline DualHashVector DualHashes::compress(std::array<LFT, OTF_LIFT_HELPER_DIM> const &v) const {
