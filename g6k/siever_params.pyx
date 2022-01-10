@@ -119,9 +119,9 @@ cdef class SieverParams(object):
         if "streams_per_thread" not in kwds:
             kwds["streams_per_thread"] = 1
         if "dh_dim" not in kwds:
-            kwds["dh_dim"] = 16
+            kwds["dh_dim"] = 20
         if "dh_vecs" not in kwds:
-            kwds["dh_vecs"] = 0
+            kwds["dh_vecs"] = 32
         if "dh_bucket_ratio" not in kwds:
             kwds["dh_bucket_ratio"] = 0.5
         if "multi_bucket" not in kwds:

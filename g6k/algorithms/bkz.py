@@ -7,6 +7,12 @@ from .pump import pump
 from .workout import workout
 import six
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
+
 def dim4free_wrapper(dim4free_fun, blocksize):
     """
     Deals with correct dim4free choices for edge cases when non default
