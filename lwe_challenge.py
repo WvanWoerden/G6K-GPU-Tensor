@@ -14,6 +14,7 @@ from math import log
 
 from fpylll import BKZ as fplll_bkz
 from fpylll.algorithms.bkz2 import BKZReduction
+from fpylll.tools.bkz_simulator import simulate
 from fpylll.tools.quality import basis_quality
 from fpylll.util import gaussian_heuristic, set_threads
 
@@ -153,10 +154,11 @@ def lwe_kernel(arg0, params=None, seed=None):
 
     T0 = time.time()
     T0_BKZ = time.time()
+    T_blocksizes = {}
     for blocksize in blocksizes:
         for tt in range(tours):
             # BKZ tours
-
+            T0_this_blocksize = time.time()
             if blocksize < fpylll_crossover:
                 if verbose:
                     print( "Starting a fpylll BKZ-%d tour. " % (blocksize), end='')
@@ -178,7 +180,11 @@ def lwe_kernel(arg0, params=None, seed=None):
                                      goal_r0=target_norm,
                                      pump_params=pump_params)
 
+            # total time spent on BKZ thus far
             T_BKZ = time.time() - T0_BKZ
+
+            # time for one tour of this blocksize
+            T_blocksizes[blocksize] = time.time() - T0_this_blocksize
 
             if verbose:
                 slope = basis_quality(g6k.M)["/"]
@@ -190,24 +196,76 @@ def lwe_kernel(arg0, params=None, seed=None):
             if g6k.M.get_r(0, 0) <= target_norm:
                 break
 
-            # overdoing n_max would allocate too much memory, so we are careful
-            svp_Tmax = svp_bkz_time_factor * T_BKZ
             expo = 0.292
-            # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
-            # cannot figure out the additive 58, will leave for now
-            n_max = int(58+6 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
 
-            rr = [g6k.M.get_r(i, i) for i in range(d)]
-            for n_expected in range(2, d-2):
-                x = (target_norm/goal_margin) * n_expected/(1.*d)
-                if 4./3 * gaussian_heuristic(rr[d-n_expected:]) > x:
-                    break
+            def attainable_SVP_dim(T_BKZ):
+                svp_Tmax = svp_bkz_time_factor * T_BKZ
+                # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
+                return int(58+6 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
 
-            print( "Without otf, would expect solution at pump-%d. n_max=%d in the given time." % (n_expected, n_max) )# noqa
-            if n_expected >= n_max - 1:
+            def expected_successful_SVP_dim(rr=None):
+                if rr is None:
+                    rr = [g6k.M.get_r(i, i) for i in range(d)]
+                for n_expected in range(2, d):
+                    x = (target_norm/goal_margin) * n_expected/(1.*d)
+                    if 4./3 * gaussian_heuristic(rr[d-n_expected:]) > x:
+                        break
+                return n_expected
+
+            # given current state of basis
+            current_n_max = attainable_SVP_dim(T_BKZ)
+            current_n_expected = expected_successful_SVP_dim()
+
+            print("Without otf, would expect solution at pump-%d. n_max=%d in the given time." % (current_n_expected, current_n_max) )# noqa
+            if current_n_expected >= current_n_max - 1:
+                # stronger BKZ required
                 continue
 
-            n_max += 1
+            # perhaps we still prefer stronger BKZ, e.g. to reduce memory
+            # currently look at the next three potential tours
+            ind = blocksizes.index(blocksize)
+            remaining_blocksizes = blocksizes[ind+1:ind+3]
+
+            # expected extra BKZ times, and future basis profiles
+            extra_T_BKZs = []
+            future_rrs = []
+
+            # current data on blocksize, basis profile, and individual blocksize times
+            previous_blocksize = blocksize
+            rr = list(g6k.M.r())
+            extra_T_BKZ = 0
+            temp_T_blocksizes = T_blocksizes
+
+            for rblock in remaining_blocksizes:
+                # simulate basis profile after next tour, and update basis profile
+                params = fplll_bkz.Param(block_size=rblock, max_loops=1)
+                rr, _ = simulate(rr, params)
+                future_rrs += [rr]
+
+                # time for BKZ-rblock tour calculated as a function of the previous tour
+                T_rblock_BKZ = temp_T_blocksizes[previous_blocksize] * 2**(expo * (rblock - previous_blocksize))
+                temp_T_blocksizes[rblock] = T_rblock_BKZ
+
+                # total estimated BKZ time with rblock tour added and update previous blocksize
+                extra_T_BKZ += T_rblock_BKZ
+                extra_T_BKZs += [extra_T_BKZ]
+                previous_blocksize = rblock
+
+            more_BKZ = False
+
+            for (rr, extra_T_BKZ) in zip(future_rrs, extra_T_BKZs):
+                potential_n_expected = expected_successful_SVP_dim(rr=rr)
+                svp_dim_reduction = potential_n_expected - current_n_expected
+                if svp_dim_reduction >= 0:
+                    continue
+                time_SVP_current = 2**(expo * (current_n_expected - 64)) / params.threads
+                if extra_T_BKZ < (1. - 2**(expo*svp_dim_reduction)) * time_SVP_current:
+                    more_BKZ = True
+
+            if more_BKZ:
+                continue
+
+            current_n_max += 1
 
             # Larger SVP
 
@@ -215,9 +273,9 @@ def lwe_kernel(arg0, params=None, seed=None):
             while gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)]) < target_norm * (d - llb)/(1.*d): # noqa
                 llb -= 1
 
-            f = d-llb-n_max
+            f = d-llb-current_n_max
             if verbose:
-                print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, n_max, svp_Tmax) ) # noqa
+                print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, current_n_max, svp_Tmax) ) # noqa
             pump(g6k, tracer, llb, d-llb, f, verbose=verbose,
                  goal_r0=target_norm * (d - llb)/(1.*d))
 
