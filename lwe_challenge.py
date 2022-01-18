@@ -94,6 +94,7 @@ def lwe_kernel(arg0, params=None, seed=None):
     # flow of the lwe solver
     svp_bkz_time_factor = params.pop("lwe/svp_bkz_time_factor")
     goal_margin = params.pop("lwe/goal_margin")
+    favour_memory_factor = params.pop("lwe/favour_memory_factor")
 
     # generation of lwe instance and Kannan's embedding
     alpha = params.pop("lwe/alpha")
@@ -197,9 +198,9 @@ def lwe_kernel(arg0, params=None, seed=None):
                 break
 
             expo = 0.292
+            svp_Tmax = svp_bkz_time_factor * T_BKZ
 
             def attainable_SVP_dim(T_BKZ):
-                svp_Tmax = svp_bkz_time_factor * T_BKZ
                 # solve max d s.t. 2^{expo * d} / param.threads <= svp_Tmax
                 return int(58+6 + (1./expo) *
                            log(svp_Tmax * params.threads)/log(2.))
@@ -225,7 +226,7 @@ def lwe_kernel(arg0, params=None, seed=None):
             # perhaps we still prefer stronger BKZ, e.g. to reduce memory
             # currently look at the next three potential tours
             ind = blocksizes.index(blocksize)
-            remaining_blocksizes = blocksizes[ind+1:ind+3]
+            remaining_blocksizes = blocksizes[ind+1:ind+4]
 
             # expected extra BKZ times, and future basis profiles
             extra_T_BKZs = []
@@ -239,8 +240,8 @@ def lwe_kernel(arg0, params=None, seed=None):
 
             for rblock in remaining_blocksizes:
                 # simulate basis profile after next tour, update basis profile
-                params = fplll_bkz.Param(block_size=rblock, max_loops=1)
-                rr, _ = simulate(rr, params)
+                bkz_params = fplll_bkz.Param(block_size=rblock, max_loops=1)
+                rr, _ = simulate(rr, bkz_params)
                 future_rrs += [rr]
 
                 # time for BKZ-rblock tour as a function of the previous tour
@@ -261,7 +262,7 @@ def lwe_kernel(arg0, params=None, seed=None):
                     continue
                 time_SVP_current = 2**(expo * (current_n_expected - 64))
                 time_SVP_current /= params.threads
-                if extra_T_BKZ < (1-2**(expo*svp_dim_dec)) * time_SVP_current:
+                if extra_T_BKZ < favour_memory_factor * (1-2**(expo*svp_dim_dec)) * time_SVP_current: # noqa
                     more_BKZ = True
 
             if more_BKZ:
@@ -317,6 +318,7 @@ def lwe():
                                   lwe__m=None,
                                   lwe__goal_margin=1.5,
                                   lwe__svp_bkz_time_factor=1,
+                                  lwe__favour_memory_factor=1,
                                   bkz__blocksizes=None,
                                   bkz__tours=1,
                                   bkz__jump=1,
