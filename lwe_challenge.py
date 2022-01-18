@@ -200,10 +200,10 @@ def lwe_kernel(arg0, params=None, seed=None):
             expo = 0.292
             svp_Tmax = svp_bkz_time_factor * T_BKZ
 
-            def attainable_SVP_dim(T_BKZ):
+            def attainable_SVP_dim(T_svp):
                 # solve max d s.t. 2^{expo * d} / param.threads <= svp_Tmax
                 return int(58+6 + (1./expo) *
-                           log(svp_Tmax * params.threads)/log(2.))
+                           log(T_svp * params.threads)/log(2.))
 
             def expected_successful_SVP_dim(rr=None):
                 if rr is None:
@@ -215,7 +215,7 @@ def lwe_kernel(arg0, params=None, seed=None):
                 return n_expected
 
             # given current state of basis
-            current_n_max = attainable_SVP_dim(T_BKZ)
+            current_n_max = attainable_SVP_dim(svp_Tmax)
             current_n_expected = expected_successful_SVP_dim()
 
             print("Without otf, would expect solution at pump-%d. n_max=%d in the given time." % (current_n_expected, current_n_max)) # noqa
