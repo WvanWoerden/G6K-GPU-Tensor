@@ -108,8 +108,8 @@ def lwe_kernel(arg0, params=None, seed=None):
         set_threads(threads)
 
     A, c, q = load_lwe_challenge(n=n, alpha=alpha)
-    print( "-------------------------" )
-    print( "Primal attack, LWE challenge n=%d, alpha=%.4f" % (n, alpha) )
+    print("-------------------------")
+    print("Primal attack, LWE challenge n=%d, alpha=%.4f" % (n, alpha))
 
     if m is None:
         try:
@@ -125,20 +125,18 @@ def lwe_kernel(arg0, params=None, seed=None):
             (b, s, _) = min_cost_param
         except TypeError:
             raise TypeError("No winning parameters.")
-    print( "Chose %d samples. Predict solution at bkz-%d + svp-%d" % (m, b, s))
+    print("Chose %d samples. Predict solution at bkz-%d + svp-%d" % (m, b, s))
     print("")
 
     # no use in having a very small b
-    b=max(b,s-65)
-
-    target_norm = goal_margin * (alpha*q)**2 * m + 1
+    b = max(b, s-65)
 
     if blocksizes is not None:
         blocksizes = list(range(10, 40)) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
     else:
-        blocksizes = list(range(10, 50)) + list(reversed(range(b-14, 60, -10))) + list(range(b - 12, b + 25, 2))
+        blocksizes = list(range(10, 50)) + list(reversed(range(b-14, 60, -10))) + list(range(b - 12, b + 25, 2)) # noqa
 
-    loadblocksize=0
+    loadblocksize = 0
 #    loadblocksize=113
 #    loadtour=0
 #    loadtime=96696.556
@@ -150,7 +148,7 @@ def lwe_kernel(arg0, params=None, seed=None):
         B, _ = load_matrix_file("lwechallenge/B_n%d_a%.4f_block%d_tour%d.mat" % (n, alpha, loadblocksize, loadtour), doLLL=False, high_prec=True)
 
     g6k = Siever(B, params)
-    print( "GSO precision: ", g6k.M.float_type )
+    print("GSO precision: ", g6k.M.float_type)
 
     if dont_trace:
         tracer = dummy_tracer
@@ -159,8 +157,13 @@ def lwe_kernel(arg0, params=None, seed=None):
 
     d = g6k.full_n
     g6k.lll(0, g6k.full_n)
+
+    target_norm = (alpha*q)**2 * m + 1
+    full_gh = gaussian_heuristic([g6k.M.get_r(i, i) for i in range(d)])
+    target_norm_slack = min(goal_margin * target_norm, 0.98 * full_gh)
+
     slope = basis_quality(g6k.M)["/"]
-    print( "Intial Slope = %.5f\n" % slope )
+    print("Intial Slope = %.5f\n" % slope)
 
     T0 = time.time()
     T0_BKZ = time.time()
@@ -172,11 +175,11 @@ def lwe_kernel(arg0, params=None, seed=None):
                 T0_BKZ = time.time() - loadtime
                 T0 = T0_BKZ
             else:
-            # BKZ tours
+                # BKZ tours
 
                 if blocksize < fpylll_crossover:
                     if verbose:
-                        print( "Starting a fpylll BKZ-%d tour. " % (blocksize), end='')
+                        print("Starting a fpylll BKZ-%d tour. " % (blocksize), end='')
                         sys.stdout.flush()
                     bkz = BKZReduction(g6k.M)
                     par = fplll_bkz.Param(blocksize,
@@ -186,13 +189,13 @@ def lwe_kernel(arg0, params=None, seed=None):
 
                 else:
                     if verbose:
-                        print( "Starting a pnjBKZ-%d tour. " % (blocksize) )
+                        print("Starting a pnjBKZ-%d tour. " % (blocksize))
 
                     pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=jump,
                                          verbose=verbose,
                                          extra_dim4free=extra_dim4free,
                                          dim4free_fun=dim4free_fun,
-                                         goal_r0=target_norm,
+                                         goal_r0=target_norm_slack,
                                          pump_params=pump_params)
 
             T_BKZ = time.time() - T0_BKZ
@@ -200,7 +203,7 @@ def lwe_kernel(arg0, params=None, seed=None):
             if verbose:
                 slope = basis_quality(g6k.M)["/"]
                 fmt = "slope: %.5f, walltime: %.3f sec"
-                print( fmt % (slope, time.time() - T0) )
+                print(fmt % (slope, time.time() - T0))
 
             g6k.lll(0, g6k.full_n)
 
@@ -209,18 +212,18 @@ def lwe_kernel(arg0, params=None, seed=None):
                 fn.write(str(g6k.M.B))
                 fn.close()
 
-            if g6k.M.get_r(0, 0) <= target_norm:
+            if g6k.M.get_r(0, 0) <= target_norm_slack:
                 break
 
             # overdoing n_max would allocate too much memory, so we are careful
             svp_Tmax = svp_bkz_time_factor * T_BKZ
             expo = 0.292
-            # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
+            # maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
             # cannot figure out the additive 58, will leave for now
-            n_max = int(58+2 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
+            n_max = int(58+2+(1./expo) * log(svp_Tmax*params.threads)/log(2.))
             rr = [g6k.M.get_r(i, i) for i in range(d)]
             for n_expected in range(2, d-2):
-                x = (target_norm/goal_margin) * n_expected/(1.*d)
+                x = target_norm * n_expected/(1.*d)
                 if 4./3. * gaussian_heuristic(rr[d-n_expected:]) > x:
                     break
             # ensure a BigSVP attempt after the last bkz tour
@@ -234,7 +237,7 @@ def lwe_kernel(arg0, params=None, seed=None):
             # Larger SVP
             llb = d - n_max
             while llb >= 1 and gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)]) < target_norm * (d - llb)/(1.*d): # noqa
-                print( "gh([%d,%d])=%f < %f" % (llb, d, (gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)])), target_norm * (d - llb)/(1.*d)) )
+                print("gh([%d,%d])=%f < %f" % (llb, d, (gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)])), target_norm * (d - llb)/(1.*d)))
                 sys.stdout.flush()
                 llb -= 1
             if llb < 0:
@@ -242,17 +245,23 @@ def lwe_kernel(arg0, params=None, seed=None):
                 sys.stdout.flush()
                 raise ValueError("llb < 0")
 
-            f = d-llb-n_max
+            f = max(d-llb-n_expected, 0)
             if verbose:
                 print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, n_max, svp_Tmax) ) # noqa
                 sys.stdout.flush()
+
+            proj_target_norm = target_norm * (d - llb)/(1.*d)
+            proj_gh = gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)]) # noqa
+            proj_target_norm_slack = min(goal_margin * proj_target_norm,
+                                         0.98 * proj_gh)
+
             pump(g6k, tracer, llb, d-llb, f, verbose=verbose,
-                 goal_r0=target_norm * (d - llb)/(1.*d))
+                 goal_r0=proj_target_norm_slack)
 
             if verbose:
                 slope = basis_quality(g6k.M)["/"]
                 fmt = "\n slope: %.5f, walltime: %.3f sec"
-                print( fmt % (slope, time.time() - T0) )
+                print(fmt % (slope, time.time() - T0))
                 print
 
             g6k.lll(0, g6k.full_n)
@@ -261,8 +270,8 @@ def lwe_kernel(arg0, params=None, seed=None):
                 break
 
         if g6k.M.get_r(0, 0) <= target_norm:
-            print( "Finished! TT=%.2f sec" % (time.time() - T0) )
-            print( g6k.M.B[0] )
+            print("Finished! TT=%.2f sec" % (time.time() - T0))
+            print(g6k.M.B[0])
             alpha_ = int(alpha*1000)
             filename = 'lwechallenge/%03d-%03d-solution.txt' % (n, alpha_)
             fn = open(filename, "w")
