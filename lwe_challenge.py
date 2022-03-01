@@ -22,7 +22,7 @@ from g6k.algorithms.pump import pump
 from g6k.siever import Siever
 from g6k.utils.cli import parse_args, run_all, pop_prefixed_params
 from g6k.utils.stats import SieveTreeTracer, dummy_tracer
-from g6k.utils.util import load_lwe_challenge
+from g6k.utils.util import load_lwe_challenge, load_matrix_file
 
 from g6k.utils.lwe_estimation import gsa_params, primal_lattice_basis
 
@@ -128,14 +128,26 @@ def lwe_kernel(arg0, params=None, seed=None):
     print( "Chose %d samples. Predict solution at bkz-%d + svp-%d" % (m, b, s))
     print("")
 
+    # no use in having a very small b
+    b=max(b,s-65)
+
     target_norm = goal_margin * (alpha*q)**2 * m + 1
 
     if blocksizes is not None:
         blocksizes = list(range(10, 40)) + eval("range(%s)" % re.sub(":", ",", blocksizes)) # noqa
     else:
-        blocksizes = list(range(10, 50)) + list(range(60, b-15, 5)) + [b-15] + list(range(b - 13, b + 25, 2))
+        blocksizes = list(range(10, 50)) + list(reversed(range(b-14, 60, -10))) + list(range(b - 12, b + 25, 2))
 
-    B = primal_lattice_basis(A, c, q, m=m)
+    loadblocksize=0
+#    loadblocksize=113
+#    loadtour=0
+#    loadtime=96696.556
+    if loadblocksize == 0:
+        B = primal_lattice_basis(A, c, q, m=m)
+    else:
+        print("Loading matrix file: lwechallenge/B_n%d_a%.4f_block%d_tour%d.mat" % (n, alpha, loadblocksize, loadtour))
+        sys.stdout.flush()
+        B, _ = load_matrix_file("lwechallenge/B_n%d_a%.4f_block%d_tour%d.mat" % (n, alpha, loadblocksize, loadtour), doLLL=False, high_prec=True)
 
     g6k = Siever(B, params)
     print( "GSO precision: ", g6k.M.float_type )
@@ -154,28 +166,34 @@ def lwe_kernel(arg0, params=None, seed=None):
     T0_BKZ = time.time()
     for blocksize in blocksizes:
         for tt in range(tours):
+            if blocksize < loadblocksize:
+                continue
+            if blocksize == loadblocksize:
+                T0_BKZ = time.time() - loadtime
+                T0 = T0_BKZ
+            else:
             # BKZ tours
 
-            if blocksize < fpylll_crossover:
-                if verbose:
-                    print( "Starting a fpylll BKZ-%d tour. " % (blocksize), end='')
-                    sys.stdout.flush()
-                bkz = BKZReduction(g6k.M)
-                par = fplll_bkz.Param(blocksize,
-                                      strategies=fplll_bkz.DEFAULT_STRATEGY,
-                                      max_loops=1)
-                bkz(par)
+                if blocksize < fpylll_crossover:
+                    if verbose:
+                        print( "Starting a fpylll BKZ-%d tour. " % (blocksize), end='')
+                        sys.stdout.flush()
+                    bkz = BKZReduction(g6k.M)
+                    par = fplll_bkz.Param(blocksize,
+                                          strategies=fplll_bkz.DEFAULT_STRATEGY,
+                                          max_loops=1)
+                    bkz(par)
 
-            else:
-                if verbose:
-                    print( "Starting a pnjBKZ-%d tour. " % (blocksize) )
+                else:
+                    if verbose:
+                        print( "Starting a pnjBKZ-%d tour. " % (blocksize) )
 
-                pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=jump,
-                                     verbose=verbose,
-                                     extra_dim4free=extra_dim4free,
-                                     dim4free_fun=dim4free_fun,
-                                     goal_r0=target_norm,
-                                     pump_params=pump_params)
+                    pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=jump,
+                                         verbose=verbose,
+                                         extra_dim4free=extra_dim4free,
+                                         dim4free_fun=dim4free_fun,
+                                         goal_r0=target_norm,
+                                         pump_params=pump_params)
 
             T_BKZ = time.time() - T0_BKZ
 
@@ -186,6 +204,11 @@ def lwe_kernel(arg0, params=None, seed=None):
 
             g6k.lll(0, g6k.full_n)
 
+            if blocksize >= fpylll_crossover and blocksize > loadblocksize:
+                fn = open("lwechallenge/B_n%d_a%.4f_block%d_tour%d.mat" % (n, alpha, blocksize, tt), "w")
+                fn.write(str(g6k.M.B))
+                fn.close()
+
             if g6k.M.get_r(0, 0) <= target_norm:
                 break
 
@@ -194,29 +217,35 @@ def lwe_kernel(arg0, params=None, seed=None):
             expo = 0.292
             # solving for maximal d s.t. 2^{expo * d} / param.threads <= svp_Tmax
             # cannot figure out the additive 58, will leave for now
-            n_max = int(58 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
-
+            n_max = int(58+2 + (1./expo) * log(svp_Tmax * params.threads)/log(2.))
             rr = [g6k.M.get_r(i, i) for i in range(d)]
             for n_expected in range(2, d-2):
                 x = (target_norm/goal_margin) * n_expected/(1.*d)
-                if 4./3 * gaussian_heuristic(rr[d-n_expected:]) > x:
+                if 4./3. * gaussian_heuristic(rr[d-n_expected:]) > x:
                     break
-
+            # ensure a BigSVP attempt after the last bkz tour
+            if blocksize >= blocksizes[-1] and tt >= tours-1:
+                n_max = max(n_max, n_expected+2)
             print( "Without otf, would expect solution at pump-%d. n_max=%d in the given time." % (n_expected, n_max) )# noqa
+            sys.stdout.flush()
             if n_expected >= n_max - 1:
                 continue
-
             n_max += 1
-
             # Larger SVP
-
-            llb = d - blocksize
-            while gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)]) < target_norm * (d - llb)/(1.*d): # noqa
+            llb = d - n_max
+            while llb >= 1 and gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)]) < target_norm * (d - llb)/(1.*d): # noqa
+                print( "gh([%d,%d])=%f < %f" % (llb, d, (gaussian_heuristic([g6k.M.get_r(i, i) for i in range(llb, d)])), target_norm * (d - llb)/(1.*d)) )
+                sys.stdout.flush()
                 llb -= 1
+            if llb < 0:
+                print(" llb < 0 ")
+                sys.stdout.flush()
+                raise ValueError("llb < 0")
 
             f = d-llb-n_max
             if verbose:
                 print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, n_max, svp_Tmax) ) # noqa
+                sys.stdout.flush()
             pump(g6k, tracer, llb, d-llb, f, verbose=verbose,
                  goal_r0=target_norm * (d - llb)/(1.*d))
 

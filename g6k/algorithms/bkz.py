@@ -133,3 +133,4 @@ def pump_n_jump_bkz_tour(g6k, tracer, blocksize, jump=1,
     pump(g6k, tracer, d-(blocksize-dim4free), blocksize-dim4free, 0, **pump_params)
     if verbose:
         print('')
+        sys.stdout.flush()
