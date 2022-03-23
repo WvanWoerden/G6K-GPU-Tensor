@@ -245,6 +245,15 @@ def lwe_kernel(arg0, params=None, seed=None):
                 sys.stdout.flush()
                 raise ValueError("llb < 0")
 
+            # llb is kappa for pump, so the point to which solutions are lifted
+            # lift_slack attempts to ensure we do not miss solution purely for
+            # not lifting enough. Note that while this increases beta = d-llb
+            # it increases dim4free f by the same amount, so the only extra
+            # cost incurred is from more lifting
+
+            lift_slack = 3
+            llb = max(0, llb-lift_slack)
+
             f = max(d-llb-n_expected, 0)
             if verbose:
                 print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, n_max, svp_Tmax) ) # noqa

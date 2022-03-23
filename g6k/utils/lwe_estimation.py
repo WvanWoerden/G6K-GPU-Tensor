@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 from math import e, lgamma, log, pi
 
 from fpylll import BKZ as fplll_bkz, GSO, IntegerMatrix, LLL
@@ -85,6 +84,9 @@ def log_gh_svp_q(d, delta, eta, n, q):
     # b_0, ..., b_q_index
     q_index = slope_begin - 1 if slope_begin > 0 else None
 
+    # makes no difference and assumption that q vectors remain is false
+    q_index = None
+
     if q_index is None:
         # can calculate as standard using rhf estimate for b_0 and GSA
         return log_gh_svp(d, delta, eta, n, q)
@@ -166,7 +168,7 @@ def decoupler(n, stddev, q, decouple):
     """
     params = []
 
-    ms = range(4*n+1)
+    ms = range(6*n+1, 295)
 
     for m in ms:
         beta_bound = min(m+1, 120+default_dim4free_fun(120))
@@ -180,8 +182,9 @@ def decoupler(n, stddev, q, decouple):
 
             for svp_dim in svp_dims:
                 d = m + 1
-                rhs = log_gh_svp_q(d, delta, svp_dim, n, q)
-                if rhs - log(stddev) - log(svp_dim)/2. >= 0:
+                rhs = log_gh_svp(d, delta, svp_dim, n, q)
+                # rhs = log_gh_svp_q(d, delta, svp_dim, n, q)
+                if rhs - log(stddev) - log(svp_dim)/2. > 0:
                     params.append([bkz_block_size, svp_dim, m+1])
 
     return params
