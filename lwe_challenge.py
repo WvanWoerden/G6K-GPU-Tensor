@@ -231,7 +231,12 @@ def lwe_kernel(arg0, params=None, seed=None):
                 n_max = max(n_max, n_expected+2)
             print( "Without otf, would expect solution at pump-%d. n_max=%d in the given time." % (n_expected, n_max) )# noqa
             sys.stdout.flush()
-            if n_expected >= n_max - 1:
+
+            # a potentially temporary measure to hit (40, 0.035)
+            # must be >= 1
+            n_expected_slack = 5
+
+            if n_expected >= n_max - n_expected_slack:
                 continue
             n_max += 1
             # Larger SVP
@@ -254,7 +259,13 @@ def lwe_kernel(arg0, params=None, seed=None):
             lift_slack = 3
             llb = max(0, llb-lift_slack)
 
+            # on the other hand, n_expected_slack ~does~ increase the sieving
+            # dimension, we run more BKZ than necessary and then perform a
+            # larger than necessary sieve to ensure we don't miss the proj
+
+            n_expected += n_expected_slack
             f = max(d-llb-n_expected, 0)
+
             if verbose:
                 print( "Starting svp pump_{%d, %d, %d}, n_max = %d, Tmax= %.2f sec" % (llb, d-llb, f, n_max, svp_Tmax) ) # noqa
                 sys.stdout.flush()

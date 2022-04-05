@@ -168,7 +168,7 @@ def decoupler(n, stddev, q, decouple):
     """
     params = []
 
-    ms = range(6*n+1, 295)
+    ms = range(100, max(6*n+1, 295))
 
     for m in ms:
         beta_bound = min(m+1, 120+default_dim4free_fun(120))
